@@ -5,6 +5,25 @@
 #include <ctype.h>
 #include <bitset>
 using namespace std;
+
+string bin_to_hex(string bin) 
+{ 
+    bin = string(bin.length() % 4 ? 4 - bin.length() % 4 : 0, '0') + bin; 
+    unordered_map<string, char> hex_dict = { 
+        {"0000", '0'}, {"0001", '1'}, {"0010", '2'}, {"0011", '3'}, 
+        {"0100", '4'}, {"0101", '5'}, {"0110", '6'}, {"0111", '7'}, 
+        {"1000", '8'}, {"1001", '9'}, {"1010", 'A'}, {"1011", 'B'}, 
+        {"1100", 'C'}, {"1101", 'D'}, {"1110", 'E'}, {"1111", 'F'} 
+    }; 
+    string hex = ""; 
+    for (int i = 0; i < bin.length(); i += 4) 
+    { 
+        string group = bin.substr(i, 4); 
+        hex += hex_dict[group]; 
+    } 
+    return hex; 
+}
+
 int main()
 {
     unordered_map<string,vector<string>>R_format;
@@ -155,7 +174,6 @@ int main()
         }  
         file.close(); 
     }
-    unordered_map<string,vector<string>> I_format;
     vector<string> input;
     int size = input.size();
     string data = ".data";
@@ -238,9 +256,84 @@ int main()
                 j++;
             }
             if(neg==1) immed *= -1;
-            
-        }
+            //***need to make immed binary string
 
+            string imm = "";
+
+            string machine_code_bin = imm + rs1 + funct3 + rd + opcode;
+            string machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+        }
+        else if (SB_format.find(instruction)!=SB_format.end())
+        {
+            //getting opcode
+            string opcode = SB_format[instruction][0];
+
+            //getting funct3
+            string funct3 = SB_format[instruction][1];
+
+            //getting rs1
+            j++;
+            int reg = 0;
+            while(line[j]!=',')
+            {
+                if(isdigit(line[j]))
+                {
+                    reg = reg*10 + (int(line[j]-'0'));
+                }
+                j++;
+            }
+            bitset<5> rs1_bits(reg);
+            string rs1 = rs1_bits.to_string();
+
+            //getting rs2
+            j++;
+            reg = 0;
+            while(line[j]!=',')
+            {
+                if(isdigit(line[j]))
+                {
+                    reg = reg*10 + (int(line[j]-'0'));
+                }
+                j++;
+            }
+            bitset<5> rs2_bits(reg);
+            string rs2 = rs2_bits.to_string();
+
+            //getting immediate value
+            //***need to calculate from address table
+
+            string imm = "";
+
+            string machine_code_bin = imm.substr(5,11) + rs1 + rs2 + funct3 + imm.substr(0,4) + opcode;
+            string machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+        }
+        else if (UJ_format.find(instruction)!=UJ_format.end())
+        {
+            //getting opcode
+            string opcode = UJ_format[instruction];
+
+            //getting rd
+            j++;
+            int reg = 0;
+            while(line[j]!=',')
+            {
+                if(isdigit(line[j]))
+                {
+                    reg = reg*10 + (int(line[j]-'0'));
+                }
+                j++;
+            }
+            bitset<5> rd_bits(reg);
+            string rd = rd_bits.to_string();
+
+            //getting immediate value
+            //***need to calculate from branch table
+
+            string imm = "";
+
+            string machine_code_bin = imm[20] + imm.substr(10,1) + imm[11] + imm.substr(9,12) + rd + opcode;
+            string machine_code = "0x"+ to_string(PC) + " " + bin_to_hex(machine_code_bin);
+        }
     }
     return 0;
 }
