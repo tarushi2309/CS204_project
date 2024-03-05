@@ -146,13 +146,13 @@ int main()
     ifstream file("input_file.asm"); 
     string line; 
     vector<string>input;
+    input.push_back("0");
     unordered_map<string,int>label_pc;
     if (file.is_open()) 
     {  
         int c=0;
         while (getline(file, line)) 
         {
-            c++;
             input.push_back(line);
             string label="";
             for(int i=0;i<line.length();i++)
@@ -171,6 +171,7 @@ int main()
 
                 }
             }
+            c++;
         }  
         file.close(); 
     }
@@ -202,6 +203,62 @@ int main()
         {
             instruction += line[j];
             j++;
+        }
+        if(R_format.find(instruction)!=R_format.end())
+        {
+            //getting opcode
+            string opcode = R_format[instruction][0];
+
+            //getting funct3
+            string funct3 = R_format[instruction][1];
+
+            //getting funct7
+            string funct7 = R_format[instruction][2];
+
+            //getting rd
+            j++;
+            int reg = 0;
+            while(line[j]!=',')
+            {
+                if(isdigit(line[j]))
+                {
+                    reg = reg*10 + (int(line[j]-'0'));
+                }
+                j++;
+            }
+            bitset<5> rd_bits(reg);
+            string rd = rd_bits.to_string();
+            
+            //getting rs1
+            j++;
+            int reg = 0;
+            while(line[j]!=',')
+            {
+                if(isdigit(line[j]))
+                {
+                    reg = reg*10 + (int(line[j]-'0'));
+                }
+                j++;
+            }
+            bitset<5> rs1_bits(reg);
+            string rs1 = rs1_bits.to_string();
+
+            //getting rs2
+            j++;
+            reg = 0;
+            while(line[j]!='\n')
+            {
+                if(isdigit(line[j]))
+                {
+                    reg = reg*10 + (int(line[j]-'0'));
+                }
+                j++;
+            }
+            bitset<5> rs2_bits(reg);
+            string rs2 = rs2_bits.to_string();
+            
+            string machine_code_bin = func7 + rs2 + rs1 + funct3 + rd + opcode;
+            string machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
         }
         if(I_format.find(instruction)!=I_format.end())
         {
