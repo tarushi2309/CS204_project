@@ -1,9 +1,10 @@
 #include <iostream>
 #include <unordered_map>
 #include <fstream> 
-#include <string> 
+#include<string> 
 #include <ctype.h>
 #include <bitset>
+#include <vector>
 using namespace std;
 
 string bin_to_hex(string bin) 
@@ -23,14 +24,109 @@ string bin_to_hex(string bin)
     } 
     return hex; 
 }
+string decToHexa(long long n)
+{
+    string ans = "";
+    while (n != 0) {
+        int rem = 0;
+        char ch;
+        rem = n % 16;
+        if (rem < 10) {
+            ch = rem + 48;
+        }
+        else {
+            ch = rem + 55;
+        }
+        ans = ch+ans;
+        n = n / 16;
+    }
+    return ans;
+}
+bitset<12> dec2bin_12(unsigned n)
+{
+    bitset<12>p;
+    int i;
+    for(i=11;i>=0;i--)
+    {
+        if(n>0)
+        {
+        if(n%2==1)
+        p.set(i);
+        n=n/2;
+        }
+       
+    }
+    
+    return p;
+
+}
+bitset<12> comp_2_12(long n)
+{
+    long x=n;
+    if(n<0)
+    x=-n;
+    long pow=1;
+    
+    for(int i=1;i<=12;i++)
+    pow=pow*2;
+    if(n<0)
+    {
+        x=pow-x;
+    }
+    if((n>(pow/2-1))||(n<(-pow/2)))
+        {
+            cout<<"invalid input"<<endl;
+            exit(0);
+        }
+    return dec2bin_12(x);
+}
+
+bitset<20> dec2bin_20(unsigned n)
+{
+    bitset<20>p;
+    int i;
+    for(i=19;i>=0;i--)
+    {
+        if(n>0)
+        {
+        if(n%2==1)
+        p.set(i);
+        n=n/2;
+        }
+       
+    }
+    
+    return p;
+
+}
+bitset<20> comp_2_20(long n)
+{
+    long x=n;
+    if(n<0)
+    x=-n;
+    long pow=1;
+    
+    for(int i=1;i<=20;i++)
+    pow=pow*2;
+    if(n<0)
+    {
+        x=pow-x;
+    }
+    if((n>(pow/2-1))||(n<(-pow/2)))
+        {
+            cout<<"invalid input"<<endl;
+            exit(0);
+        }
+    return dec2bin_20(x);
+}
 
 int main()
 {
-    unordered_map<string,vector<string>>R_format;
-    unordered_map<string,vector<string>>S_format;
-    unordered_map<string,vector<string>>U_format;
-
-    R_format["add"]={"0110011","000","0000000"};
+    unordered_map<string,vector<string> >R_format;
+    unordered_map<string,vector<string> >S_format;
+    unordered_map<string,vector<string> >U_format;
+    vector<string>v1={"0110011","000","0000000"};
+    R_format["add"]=v1;
     R_format["and"]={"0110011","111","0000000"};
     R_format["or"]={"0110011","110","0000000"};
     R_format["sll"]={"0110011","001","0000000"};
@@ -52,7 +148,7 @@ int main()
     U_format["lui"]={"0110111"};
 
     //creating an unordered_map to store I_format basic instruction codes (opcode and funct3)
-    unordered_map<string,vector<string>> I_format;
+    unordered_map<string,vector<string> > I_format;
     //adding addi instruction 
     vector<string> addi;
     addi.push_back("0010011");//opcode
@@ -113,7 +209,7 @@ int main()
     */
 
     //creating an unordered_map to store SB_format basic instruction codes (opcode and funct3)
-    unordered_map<string,vector<int>>SB_format;
+    unordered_map<string,vector<string>>SB_format;
 
     //adding sb instruction 
     vector<string> sb;
@@ -143,21 +239,28 @@ int main()
     unordered_map<string,string>UJ_format;
     UJ_format["jal"] = "1101111";
 
+    unordered_map<string,int>label_pc;
+    unordered_map<string,int>assembler_dir;
+    assembler_dir["word"]=4;
+    assembler_dir["dword"]=8;
+    assembler_dir["byte"]=1;
+    assembler_dir["asciiz"]=1;
+    assembler_dir["half"]=2;
+
     ifstream file("input_file.asm"); 
     string line; 
     vector<string>input;
     input.push_back("0");
-    unordered_map<string,int>label_pc;
     if (file.is_open()) 
     {  
         int c=0;
         while (getline(file, line)) 
         {
-            input.push_back(line);
+            
             string label="";
             for(int i=0;i<line.length();i++)
             {
-                if(line[i]!=' ')
+                if(line[i]!=':'||line[i]!=' '||line[i]!='\n')
                 {
                     label=label+line[i];
                 }
@@ -167,16 +270,21 @@ int main()
                     {
                         label_pc[label]=c;
                     }
+                    else
+                        input.push_back(line);
                     break;
 
                 }
             }
             c++;
-        }  
+        } 
+
         file.close(); 
     }
-    vector<string> input;
+
     int size = input.size();
+    for(int i=0;i<size;i++)
+    cout<<input[i]<<endl;
     string data = ".data";
     string text = ".text";
     auto it_data = find(input.begin(),input.end(),data);
@@ -190,6 +298,56 @@ int main()
         start = i+1;
     }
     else if (input[start]==text) start = start+1;
+
+    ofstream MyFile("output.mc");   //output file
+    for(int i=it_data-input.begin()+1;i<start-1;i++)
+    {
+        string line=input[i];
+        size_t dir = line.find('.');
+        int j=dir;
+        string directive="";
+        while(line[j]!=' ')
+        {
+            directive+=line[j];
+            j++;
+        }
+        j++;
+        long address=10000000;
+        if(directive!="asciiz")
+        {
+            long long num=0;
+            while(line[j]!='\n')
+            {
+                if(isdigit(line[j]))
+                    num=num*10+(int(line[j]-'0'));
+                if(line[j]==',')
+                {
+                    string machine_code="0x"+to_string(address)+decToHexa(num);
+                    address+=assembler_dir[directive];
+                    num=0;
+                }
+                j++;
+                if(line[j]=='\n')
+                {
+                    string machine_code="0x"+to_string(address)+decToHexa(num);
+                    MyFile<<machine_code<<endl;
+                    address+=assembler_dir[directive];
+                    num=0;
+                }
+            }
+        }
+        else
+        {
+            j++;
+            while(line[j]!='\"')
+            {
+                int ascii=int(line[j]);
+                string machine_code="0x"+to_string(address)+decToHexa(ascii);
+                MyFile<<machine_code<<endl;
+                address+=assembler_dir[directive];
+            }
+        }
+    }
     // program counter
     int PC = 0;
     //reading the instructions line by line
@@ -199,6 +357,7 @@ int main()
         int j =0;
         if(line[j] == ' ') j++;
         string instruction = "";
+        string machine_code="";
         while(line[j]!= ' ')
         {
             instruction += line[j];
@@ -231,7 +390,7 @@ int main()
             
             //getting rs1
             j++;
-            int reg = 0;
+            reg = 0;
             while(line[j]!=',')
             {
                 if(isdigit(line[j]))
@@ -257,10 +416,73 @@ int main()
             bitset<5> rs2_bits(reg);
             string rs2 = rs2_bits.to_string();
             
-            string machine_code_bin = func7 + rs2 + rs1 + funct3 + rd + opcode;
-            string machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+            string machine_code_bin = funct7 + rs2 + rs1 + funct3 + rd + opcode;
+            machine_code = "0x"+decToHexa(PC)+ " " + bin_to_hex(machine_code_bin);
         }
-        if(I_format.find(instruction)!=I_format.end())
+
+        else if(S_format.find(instruction)!=S_format.end())
+        {
+            //getting opcode
+            string opcode = S_format[instruction][0];
+
+            //getting funct3
+            string funct3 = S_format[instruction][1];
+
+            //getting rs1
+            j++;
+            int reg = 0;
+            while(line[j]!=',')
+            {
+                if(isdigit(line[j]))
+                {
+                    reg = reg*10 + (int(line[j]-'0'));
+                }
+                j++;
+            }
+            bitset<5> rs2_bits(reg);
+            string rs2 = rs2_bits.to_string();
+
+            //getting imm
+            j++;
+            int immed = 0;
+            int neg = 0;
+            while(line[j]!='(')
+            {
+                 if(isdigit(line[j]))
+                {
+                    immed = immed*10 + (int(line[j]-'0'));
+                }
+                if(line[j]=='-')
+                {
+                    neg = 1;
+                }
+                j++;
+            }
+            if(neg==1) immed *= -1;
+            bitset<12>imm_bit=comp_2_12(immed);
+            string imm=imm_bit.to_string();
+            reverse(imm.begin(),imm.end());
+
+            //getting rs1
+            j++;
+            reg=0;
+            while(line[j]!=')')
+            {
+                if(isdigit(line[j]))
+                {
+                    reg = reg*10 + (int(line[j]-'0'));
+                }
+                j++;
+            }
+            bitset<5> rs1_bits(reg);
+            string rs1 = rs1_bits.to_string();
+
+            string machine_code_bin = imm.substr(0,7) + rs2 + rs1 + funct3 + imm.substr(7,5) + opcode;
+            machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+        }
+
+
+        else if(I_format.find(instruction)!=I_format.end())
         {
             //getting opcode
             string opcode = I_format[instruction][0];
@@ -318,8 +540,54 @@ int main()
             string imm = "";
 
             string machine_code_bin = imm + rs1 + funct3 + rd + opcode;
-            string machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+             machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
         }
+        
+        else if (U_format.find(instruction)!=U_format.end())
+        {
+            //getting opcode
+            string opcode = U_format[instruction][0];
+
+            //getting rd
+            j++;
+            int reg = 0;
+            while(line[j]!=',')
+            {
+                if(isdigit(line[j]))
+                {
+                    reg = reg*10 + (int(line[j]-'0'));
+                }
+                j++;
+            }
+            bitset<5> rd_bits(reg);
+            string rd = rd_bits.to_string();
+
+            //getting immediate value
+            j++;
+            int immed = 0;
+            int neg = 0;
+            while(line[j]!='\n')
+            {
+                if(isdigit(line[j]))
+                {
+                    immed = immed*10 + (int(line[j]-'0'));
+                }
+                if(line[j]=='-')
+                {
+                    neg = 1;
+                }
+                j++;
+            }
+            if(neg==1) immed *= -1;
+            string imm = "";
+            bitset<20>imm_bit=comp_2_20(immed);
+            imm=imm_bit.to_string();
+            reverse(imm.begin(),imm.end());
+
+            string machine_code_bin = imm + rd + opcode;
+            machine_code = "0x"+ to_string(PC) + " " + bin_to_hex(machine_code_bin);
+        }
+
         else if (SB_format.find(instruction)!=SB_format.end())
         {
             //getting opcode
@@ -362,7 +630,7 @@ int main()
             string imm = "";
 
             string machine_code_bin = imm.substr(5,11) + rs1 + rs2 + funct3 + imm.substr(0,4) + opcode;
-            string machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+             machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
         }
         else if (UJ_format.find(instruction)!=UJ_format.end())
         {
@@ -389,8 +657,11 @@ int main()
             string imm = "";
 
             string machine_code_bin = imm[20] + imm.substr(10,1) + imm[11] + imm.substr(9,12) + rd + opcode;
-            string machine_code = "0x"+ to_string(PC) + " " + bin_to_hex(machine_code_bin);
+             machine_code = "0x"+ to_string(PC) + " " + bin_to_hex(machine_code_bin);
         }
+        MyFile<<machine_code<<endl;
+        PC+=4;
     }
+    MyFile.close();
     return 0;
 }
