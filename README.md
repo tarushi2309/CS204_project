@@ -8,6 +8,8 @@ The instructions should conatain instructions in the following format :
 .data // if data segment is present
 label(optional): .directive(word,half,byte,dword,asciiz) immediate value(in decimal only) // the immediate values can be more than one for an array
 for asciiz the string should be enclosed in "" double quotes
+for an array different values should be seperated by a delimiter
+
 
 .text //necessay if data segment is present to differentiate between instructions
 R_format instructions:
@@ -22,3 +24,23 @@ U_format instructions:
   Instruction_name register1,immediate_value(only in decimal containing the upper 20 bits)
 UJ_format instructions:
   Instruction_name register1,immediate_value(in decimal - 20 bits only) or a label
+
+ instructions should be written in seperate lines without any gap in between them
+ pseudo instructions are not allowed
+ for stack pointer use x2 and not sp
+
+ in the output file , for the data segment the instructions are mentioned as
+ address value
+ for eg:
+ "arr: .word 123" will give "0x10000000 0x7B"
+ but for .asciiz the values are shown for each byte
+ "arr: .asciiz "abcd"" the output will be:
+ 0x10000000 0x61
+ 0x10000001 0x62
+ 0x10000002 0x63
+ 0x10000003 0x64
+
+ to run the program , make the input file and compile the code by running the command "g++ main.cpp" 
+ make sure that g++ version is 12 or above
+ after compiling , run the executable file "a.exe" for windows and ".\a.out" for max/linux
+ 
