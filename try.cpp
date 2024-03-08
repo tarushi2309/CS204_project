@@ -150,91 +150,21 @@ int main()
 
     //creating an unordered_map to store I_format basic instruction codes (opcode and funct3)
     unordered_map<string,vector<string> > I_format;
-    //adding addi instruction 
-    vector<string> addi;
-    addi.push_back("0010011");//opcode
-    addi.push_back("000");//funct3
-    I_format["addi"] = addi;
-
-    //adding andi instruction 
-    vector<string> andi;
-    andi.push_back("0010011");//opcode
-    andi.push_back("111");//funct3
-    I_format["andi"] = andi;
-
-    //adding ori instruction 
-    vector<string> ori;
-    ori.push_back("0010011");//opcode
-    ori.push_back("110");//funct3
-    I_format["ori"] = ori;
-
-    //adding lb instruction 
-    vector<string> lb;
-    lb.push_back("0000011");//opcode
-    lb.push_back("000");//funct3
-    I_format["lb"] = lb;
-
-    //adding lh instruction 
-    vector<string> lh;
-    lh.push_back("0000011");//opcode
-    lh.push_back("001");//funct3
-    I_format["lh"] = lh;
-
-    //adding lw instruction 
-    vector<string> lw;
-    lw.push_back("0000011");//opcode
-    lw.push_back("010");//funct3
-    I_format["lw"] = lw;
-
-    //adding ld instruction 
-    vector<string> ld;
-    ld.push_back("0000011");//opcode
-    ld.push_back("011");//funct3
-    I_format["ld"] = ld;
-
-    //adding jalr instruction 
-    vector<string> jalr;
-    jalr.push_back("1100111");//opcode
-    jalr.push_back("000");//funct3
-    I_format["jalr"] = jalr;
-
-    /*
-        for(auto x: I_format)
-    {
-        cout<<x.first<<endl;
-        for(auto y: x.second)
-        {
-            cout<<y<<endl;
-        }
-    }
-    */
+    I_format["addi"] = {"0010011","000"};
+    I_format["andi"] = {"0010011","111"};
+    I_format["ori"] = {"0010011","110"};
+    I_format["lb"] = {"0000011","000"};
+    I_format["lh"] = {"0000011","001"};
+    I_format["lw"] = {"0000011","010"};
+    I_format["ld"] = {"0000011","011"};
+    I_format["jalr"] = {"1100111","000"};
 
     //creating an unordered_map to store SB_format basic instruction codes (opcode and funct3)
     unordered_map<string,vector<string>>SB_format;
-
-    //adding sb instruction 
-    vector<string> sb;
-    sb.push_back("0100011");//opcode
-    sb.push_back("000");//funct3
-    I_format["sb"] = sb;
-
-    //adding sh instruction 
-    vector<string> sh;
-    sh.push_back("0100011");//opcode
-    sh.push_back("001");//funct3
-    I_format["sh"] = sh;
-
-    //adding sw instruction 
-    vector<string> sw;
-    sw.push_back("0100011");//opcode
-    sw.push_back("010");//funct3
-    I_format["sw"] = sw;
-
-    //adding sd instruction 
-    vector<string> sd;
-    sd.push_back("0100011");//opcode
-    sd.push_back("011");//funct3
-    I_format["sd"] = sd;
+    SB_format["beq"]={"1100011","000"};
+    SB_format["bne"]={"1100011","001"};
+    SB_format["bge"]={"1100011","101"};
+    SB_format["blt"]={"1100011","100"};
 
     //creating an unordered_map to store UJ_format basic instruction codes (opcode)
     unordered_map<string,string>UJ_format;
@@ -257,27 +187,7 @@ int main()
         int c=0;
         while (getline(file, line)) 
         {
-            
-            string label="";
             input.push_back(line);
-            for(int i=0;i<line.length();i++)
-            {
-                if(line[i]!=':'||line[i]!=' '||line[i]!='\n')
-                {
-                    label=label+line[i];
-                }
-                else
-                {
-                    if(R_format.find(label)==R_format.end()&&S_format.find(label)==S_format.end()&&SB_format.find(label)==SB_format.end()&&I_format.find(label)==I_format.end()&&U_format.find(label)==U_format.end()&&UJ_format.find(label)==UJ_format.end()&&label!=".data"&&label!=".text")
-                    {
-                        label_pc[label]=c;
-                    }
-                    
-                    break;
-
-                }
-            }
-            c++;
         } 
 
         file.close(); 
@@ -552,7 +462,7 @@ int main()
                 imm = comp_2_12(immed).to_string();
                 reverse(imm.begin(),imm.end());
                 string machine_code_bin = imm + rs1 + funct3 + rd + opcode;
-                string machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+                machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
             }
             //if it is lb,lh,lw,ld
             else if (opcode == "0000011")
@@ -606,7 +516,7 @@ int main()
                 string rs1 = rs1_bits.to_string();
 
                 string machine_code_bin = imm + rs1 + funct3 + rd + opcode;
-                string machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+                machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
             }
         }
         
