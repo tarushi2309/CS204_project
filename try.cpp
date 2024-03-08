@@ -1,11 +1,12 @@
 #include <iostream>
 #include <unordered_map>
 #include <fstream> 
-#include<cstring> 
+#include <cstring> 
 #include <ctype.h>
 #include <bitset>
 #include <vector>
 #include <bits/stdc++.h>
+#include <string.h>
 using namespace std;
 
 string bin_to_hex(string bin) 
@@ -124,10 +125,7 @@ bitset<20> comp_2_20(long n)
 int main()
 {
     unordered_map<string,vector<string> >R_format;
-    unordered_map<string,vector<string> >S_format;
-    unordered_map<string,vector<string> >U_format;
-    vector<string>v1={"0110011","000","0000000"};
-    R_format["add"]=v1;
+    R_format["add"]={"0110011","000","0000000"};
     R_format["and"]={"0110011","111","0000000"};
     R_format["or"]={"0110011","110","0000000"};
     R_format["sll"]={"0110011","001","0000000"};
@@ -140,11 +138,13 @@ int main()
     R_format["div"]={"0110011","100","0000001"};
     R_format["rem"]={"0110011","110","0000001"};
 
+    unordered_map<string,vector<string> >S_format;
     S_format["sb"]={"0100011","000"};
     S_format["sw"]={"0100011","010"};
     S_format["sd"]={"0100011","011"};
     S_format["sh"]={"0100011","001"};
 
+    unordered_map<string,vector<string> >U_format;
     U_format["auipc"]={"0010111"};
     U_format["lui"]={"0110111"};
 
@@ -184,7 +184,6 @@ int main()
     
     if (file.is_open()) 
     {  
-        int c=0;
         while (getline(file, line)) 
         {
             input.push_back(line);
@@ -195,12 +194,12 @@ int main()
 
     int size = input.size();
    
-    
     string data = ".data";
     string text = ".text";
     auto it_data = find(input.begin(),input.end(),data);
     auto it_text = find(input.begin(),input.end(),text);
     int start = 0;
+
     //finding the text segment
     if(it_data != input.end())
     {
@@ -209,7 +208,40 @@ int main()
         start = i+1;
     }
     else if (input[start]==text) start = start+1;
-   
+    
+    //creating address table for branch instructions
+    int PC_LABEL = 0;
+    for(int i=start;i<size;i++)
+    {
+        string line = input[i];
+        string label = "";
+        int j = 0;
+        while(line[j]!=' ' && line[j]!=':' && j<line.size())
+        {
+            label += line[j];
+            j++;
+        }
+        if(R_format.find(label)==R_format.end()&&S_format.find(label)==S_format.end()&&SB_format.find(label)==SB_format.end()&&I_format.find(label)==I_format.end()&&U_format.find(label)==U_format.end()&&UJ_format.find(label)==UJ_format.end())
+        {
+            label_pc[label]=PC_LABEL;
+        }
+        else PC_LABEL+=4;
+    }
+
+    for(int i = 0;i<input.size();)
+    {
+        string line = input[i].substr(0,input[i].size()-1);
+        if(label_pc.find(line)!=label_pc.end())
+        {
+            auto it = find(input.begin(),input.end(),line+':');
+            input.erase(it);
+        }
+        else
+        {
+            i++;
+        }
+    }
+
     ofstream MyFile("output.mc");   //output file
     long address=10000000;
     for(int i=it_data-input.begin()+1;i<start-1;i++)
@@ -225,7 +257,6 @@ int main()
         }
         j++;
         
-        cout<<directive<<endl;
         if(directive!="asciiz")
         {
             long long num=0;
@@ -235,19 +266,17 @@ int main()
                     num=num*10+(int(line[j]-'0'));
                 if(line[j]==',')
                 {
-                    string machine_code="0x"+to_string(address)+ " "+decToHexa(num);
+                    string machine_code="0x"+to_string(address)+ " "+"0x"+decToHexa(num);
                     MyFile<<machine_code<<endl;
                     address+=assembler_dir[directive];
-                    cout<<machine_code<<endl;
                     num=0;
                 }
                 j++;
                 if(j==line.size())
                 {
-                    string machine_code="0x"+to_string(address)+" "+decToHexa(num);
+                    string machine_code="0x"+to_string(address)+" "+"0x"+decToHexa(num);
                     MyFile<<machine_code<<endl;
                     address+=assembler_dir[directive];
-                    cout<<machine_code<<endl;
                     num=0;
                 }
             }
@@ -258,9 +287,8 @@ int main()
             while(line[j]!='\"')
             {
                 int ascii=int(line[j]);
-                string machine_code="0x"+to_string(address)+decToHexa(ascii);
+                string machine_code="0x"+to_string(address)+" "+"0x"+decToHexa(ascii);
                 MyFile<<machine_code<<endl;
-                cout<<machine_code<<endl;
                 address+=assembler_dir[directive];
             }
         }
@@ -269,7 +297,8 @@ int main()
     // program counter
     int PC = 0;
     //reading the instructions line by line
-    for(int i=start;i<size;i++)
+
+    for(int i=start;i<input.size();i++,PC+=4)
     {
         string line = input[i];
         int j =0;
@@ -281,6 +310,7 @@ int main()
             instruction += line[j];
             j++;
         }
+        
         if(R_format.find(instruction)!=R_format.end())
         {
             //getting opcode
@@ -377,7 +407,6 @@ int main()
                 j++;
             }
             if(neg==1) immed *= -1;
-            cout<<immed<<endl;
             bitset<12>imm_bit=comp_2_12(immed);
             string imm=imm_bit.to_string();
             reverse(imm.begin(),imm.end());
@@ -397,7 +426,7 @@ int main()
             string rs1 = rs1_bits.to_string();
 
             string machine_code_bin = imm.substr(0,7) + rs2 + rs1 + funct3 + imm.substr(7,5) + opcode;
-            machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+            machine_code = "0x"+decToHexa(PC)+ " " + bin_to_hex(machine_code_bin);
         }
 
 
@@ -462,7 +491,7 @@ int main()
                 imm = comp_2_12(immed).to_string();
                 reverse(imm.begin(),imm.end());
                 string machine_code_bin = imm + rs1 + funct3 + rd + opcode;
-                machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+                machine_code = "0x"+decToHexa(PC)+ " " + bin_to_hex(machine_code_bin);
             }
             //if it is lb,lh,lw,ld
             else if (opcode == "0000011")
@@ -516,7 +545,7 @@ int main()
                 string rs1 = rs1_bits.to_string();
 
                 string machine_code_bin = imm + rs1 + funct3 + rd + opcode;
-                machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+                machine_code = "0x"+decToHexa(PC)+ " " + bin_to_hex(machine_code_bin);
             }
         }
         
@@ -562,9 +591,9 @@ int main()
             reverse(imm.begin(),imm.end());
 
             string machine_code_bin = imm + rd + opcode;
-            machine_code = "0x"+ to_string(PC) + " " + bin_to_hex(machine_code_bin);
+            machine_code = "0x"+ decToHexa(PC) + " " + bin_to_hex(machine_code_bin);
         }
-
+        
         else if (SB_format.find(instruction)!=SB_format.end())
         {
             //getting opcode
@@ -601,14 +630,22 @@ int main()
             bitset<5> rs2_bits(reg);
             string rs2 = rs2_bits.to_string();
 
-            //getting immediate value
-            //***need to calculate from address table
-
-            string imm = "";
-
-            string machine_code_bin = imm.substr(5,11) + rs1 + rs2 + funct3 + imm.substr(0,4) + opcode;
-             machine_code = "0x"+to_string(PC)+ " " + bin_to_hex(machine_code_bin);
+            //getting immediate value from label table
+            j++;
+            string label = "";
+            while(j<input[i].size())
+            {
+                label+=line[j];
+                j++;
+            }
+            int immed = (label_pc[label] - PC)/2;
+            string imm;
+            imm = comp_2_12(immed).to_string();
+            reverse(imm.begin(),imm.end());
+            string machine_code_bin = imm[0] + imm.substr(2,6) + rs2 + rs1 + funct3 + imm.substr(8,4) + imm[1] + opcode;
+            machine_code = "0x"+decToHexa(PC)+ " " + bin_to_hex(machine_code_bin);
         }
+        
         else if (UJ_format.find(instruction)!=UJ_format.end())
         {
             //getting opcode
@@ -628,16 +665,23 @@ int main()
             bitset<5> rd_bits(reg);
             string rd = rd_bits.to_string();
 
-            //getting immediate value
-            //***need to calculate from branch table
-
-            string imm = "";
-
-            string machine_code_bin = imm[20] + imm.substr(10,1) + imm[11] + imm.substr(9,12) + rd + opcode;
-             machine_code = "0x"+ to_string(PC) + " " + bin_to_hex(machine_code_bin);
+            //getting immediate value from label table
+            j++;
+            string label = "";
+            while(j<input[i].size())
+            {
+                label+=line[j];
+                j++;
+            }
+            int immed = (label_pc[label] - PC)/2;
+            string imm;
+            imm = comp_2_20(immed).to_string();
+            reverse(imm.begin(),imm.end());
+            string machine_code_bin = imm[0] + imm.substr(10,10) + imm[9] + imm.substr(1,8) + rd + opcode;
+            machine_code = "0x"+ decToHexa(PC) + " " + bin_to_hex(machine_code_bin);
         }
+        
         MyFile<<machine_code<<endl;
-        PC+=4;
     }
     MyFile.close();
     return 0;
