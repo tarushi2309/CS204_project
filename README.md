@@ -3,6 +3,7 @@
 The project converts an assembly code to machine instructions.
 The input file with assembly instructions should be named "input_file.asm"
 The "output.mc" file contains the machine code
+We have attached a sample input and output file
 The instructions should conatain instructions in the following format :
 
 .data // if data segment is present
