@@ -25,22 +25,23 @@ U_format instructions:
 UJ_format instructions:
   Instruction_name register1,immediate_value(in decimal - 20 bits only) or a label
 
- instructions should be written in seperate lines without any gap in between them
- pseudo instructions are not allowed
- for stack pointer use x2 and not sp
+ Instructions should be written in seperate lines without any gap in between them
+ Pseudo instructions are not allowed
+ For stack pointer use x2 and not sp
+ There should not be extra spaces in between the lines or in the beginning of the line
 
- in the output file , for the data segment the instructions are mentioned as
- address value
+ In the output file , for the data segment the instructions are mentioned as
+ address value_given
  for eg:
  "arr: .word 123" will give "0x10000000 0x7B"
- but for .asciiz the values are shown for each byte
+ But for .asciiz the values are shown for each byte
  "arr: .asciiz "abcd"" the output will be:
  0x10000000 0x61
  0x10000001 0x62
  0x10000002 0x63
  0x10000003 0x64
 
- to run the program , make the input file and compile the code by running the command "g++ main.cpp" 
- make sure that g++ version is 12 or above
- after compiling , run the executable file "a.exe" for windows and ".\a.out" for max/linux
+ To run the program , make the input file and compile the code by running the command "g++ main.cpp" 
+ Make sure that g++ version is 12 or above
+ After compiling , run the executable file "a.exe" for windows and "./a.out" for max/linux
  
