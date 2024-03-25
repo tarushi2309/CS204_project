@@ -1,4 +1,4 @@
-#include<bits/stdc++.h>
+#include <bits/stdc++.h>
 #include<iostream>
 #include<regex>
 
@@ -29,7 +29,35 @@ long long hexToDec(string hex)
     } 
     return dec; 
 }
-
+int always_taken(unordered_map<string,vector<pair<int,string>>> trace)
+{
+    int taken=0;
+    for(auto itr:trace)
+    {
+        for(auto it:trace[itr.first])
+        {
+            if(it.first==1)
+            taken++;
+        }
+    }
+    return taken;
+}
+int one_bit(unordered_map<string,vector<pair<int,string>>> trace,unordered_map<string,bitset<1>> &one_bit_history)
+{
+    int acc=0;
+    for(auto itr:trace)
+    {
+        string PC=itr.first;
+        for(auto it:trace[PC])
+        {
+            if(it.first==one_bit_history[PC].count())
+            acc++;
+            else
+            one_bit_history[PC]=it.first;
+        }
+    }
+    return acc;
+}
 int main()
 {
     ifstream file("input_file.txt");
@@ -50,9 +78,10 @@ int main()
     int size = input.size();
 
     unordered_map<string,vector<pair<int,string>>> trace;
-
+    unordered_map<string,bitset<1>> one_bit_history;
+    int total=0;
     regex pattern("(beq|bne|blt|ble|bgt|bge|bltu|bleu|bgtu|bgeu|jal|j|jalr|jr|ret|call|tail)");
-    for(int i=0;i<size;i++)
+    for(int i=0;i<size-1;i++)
     {
         if(regex_search(input[i],pattern))
         {
@@ -64,19 +93,18 @@ int main()
             long long jump = target_dec-PC_dec;
             if(jump!=4) branch_taken = 1;
             trace[PC].push_back(make_pair(branch_taken,target));
+            one_bit_history[PC]=0;
+            total++;
         }
     }
 
-    for(auto x:trace)
-    {
-        cout<<x.first<<endl;
-        for(auto y:x.second)
-        {
-            cout<<y.first<<" ";
-            cout<<y.second<<endl;
-        }
-        cout<<endl;
-    }
-
+    //always taken
+    int taken1=always_taken(trace);
+    double acc1=(double)taken1/total*100;
+    cout<<"accuracy of always taken : "<<acc1<<endl;
+    //1 bit
+    int taken2=one_bit(trace,one_bit_history);
+    double acc2=(double)taken2/total*100;
+    cout<<"accuracy of 1-bit branch predictor : "<<acc2<<endl;
     return 0;
 }
