@@ -1,12 +1,30 @@
 #include <bits/stdc++.h>
 #include<iostream>
 #include<regex>
+#include<string.h>
 
 using namespace std;
 
+unordered_map<string,pair<string,string>> btb_taken;
+unordered_map<string,pair<string,string>> btb_not_taken;
+unordered_map<string,pair<string,string>> btb_one_bit;
+unordered_map<string,pair<string,string>> btb_two_bit;
+
+unordered_map<string,bool> history_table;
+
+unordered_map<string,bool> one_bit_state;
+unordered_map<string,int> two_bit_state;
+
+int total=0;
+int not_taken = 0;
+int taken = 0;
+int accuracy_1bit = 0;
+int accuracy_2bit = 0;
+
 long long hexToDec(string hex) 
 {   
-    for (char& c : hex) {
+    for (char& c : hex)
+    {
         c = toupper(c);
     }
     int len = hex.size(); 
@@ -29,38 +47,236 @@ long long hexToDec(string hex)
     } 
     return dec; 
 }
-int always_taken(unordered_map<string,vector<pair<int,string>>> trace)
+
+string decToHex(long long dec)
 {
-    int taken=0;
-    for(auto itr:trace)
+    string hex = "";
+    int rem;
+    char ch;
+    while (dec != 0)
     {
-        for(auto it:trace[itr.first])
+        rem = dec % 16;
+        if (rem < 10)
         {
-            if(it.first==1)
-            taken++;
+            ch = rem + 48;
+        }
+        else
+        {
+            ch = rem + 55;
+        }
+        hex += ch;
+        dec = dec / 16;
+    }
+    if (hex == "")
+    {
+        hex += '0';
+    }
+    reverse(hex.begin(), hex.end());
+    return ("0x" + hex);
+}
+
+vector<string> split(string s)
+{
+    vector<string> output;
+    string token;
+
+    istringstream iss(s);
+
+    while (iss >> token)
+    {
+        output.push_back(token);
+    }
+
+    return output;
+}
+
+void always_taken(string curr_instruction, string next_instruction)
+{
+    vector<string> tokens1 = split(curr_instruction);
+    vector<string> tokens2 = split(next_instruction);
+    string PC = tokens1[2];
+    string target_PC = tokens2[2];
+    int actual_jump = hexToDec(target_PC) - hexToDec(PC);
+    string label = tokens1[tokens1.size()-1];
+    int label_jump;
+    if(label[1]=='x')
+    {
+        label_jump = hexToDec(label);
+    }
+    else
+    {
+        label_jump = stoi(label);
+    }
+    if(tokens1[tokens1.size()-2] == "-") label_jump *= -1;
+    if(actual_jump == label_jump) taken++;
+    btb_taken[PC] = {"TAKEN",decToHex(hexToDec(PC) + label_jump)};
+}
+
+void always_not_taken(string curr_instruction, string next_instruction)
+{
+    vector<string> tokens1 = split(curr_instruction);
+    vector<string> tokens2 = split(next_instruction);
+    string PC = tokens1[2];
+    string target_PC = tokens2[2];
+    int actual_jump = hexToDec(target_PC) - hexToDec(PC);
+    string label = tokens1[tokens1.size()-1];
+    int label_jump;
+    if(label[1]=='x')
+    {
+        label_jump = hexToDec(label);
+    }
+    else
+    {
+        label_jump = stoi(label);
+    }
+    if(tokens1[tokens1.size()-2] == "-") label_jump *= -1;
+    if(actual_jump != label_jump) not_taken++;
+    btb_not_taken[PC] = {"NOT TAKEN",decToHex(hexToDec(PC) + 4)};
+}
+
+void one_bit_predictor(string curr_instruction, string next_instruction)
+{
+    vector<string> tokens1 = split(curr_instruction);
+    vector<string> tokens2 = split(next_instruction);
+    string PC = tokens1[2];
+    string target_PC = tokens2[2];
+    int actual_jump = hexToDec(target_PC) - hexToDec(PC);
+    string label = tokens1[tokens1.size()-1];
+    int label_jump;
+    if(label[1]=='x')
+    {
+        label_jump = hexToDec(label);
+    }
+    else
+    {
+        label_jump = stoi(label);
+    }
+    if(tokens1[tokens1.size()-2] == "-") label_jump *= -1;
+
+    if(one_bit_state.find(PC)==one_bit_state.end()) one_bit_state[PC] = false;
+    
+    bool state = one_bit_state[PC];
+    if(state)
+    {
+        if(actual_jump == label_jump)
+        {
+            accuracy_1bit++;
+        }
+        else
+        {
+            one_bit_state[PC] = false;
         }
     }
-    return taken;
-}
-int one_bit(unordered_map<string,vector<pair<int,string>>> trace,unordered_map<string,bitset<1>> &one_bit_history)
-{
-    int acc=0;
-    for(auto itr:trace)
+    else
     {
-        string PC=itr.first;
-        for(auto it:trace[PC])
+        if(actual_jump != label_jump)
         {
-            if(it.first==one_bit_history[PC].count())
-            acc++;
-            else
-            one_bit_history[PC]=it.first;
+            accuracy_1bit++;
+        }
+        else
+        {
+            one_bit_state[PC] = true;
         }
     }
-    return acc;
+    if(one_bit_state[PC]) btb_one_bit[PC] = {"TAKEN",decToHex(hexToDec(PC) + label_jump)};
+    else btb_one_bit[PC] = {"NOT TAKEN",decToHex(hexToDec(PC) + 4)};
 }
+
+void two_bit_predictor(string curr_instruction, string next_instruction)
+{
+    vector<string> tokens1 = split(curr_instruction);
+    vector<string> tokens2 = split(next_instruction);
+    string PC = tokens1[2];
+    string target_PC = tokens2[2];
+    int actual_jump = hexToDec(target_PC) - hexToDec(PC);
+    string label = tokens1[tokens1.size()-1];
+    int label_jump;
+    if(label[1]=='x')
+    {
+        label_jump = hexToDec(label);
+    }
+    else
+    {
+        label_jump = stoi(label);
+    }
+    if(tokens1[tokens1.size()-2] == "-") label_jump *= -1;
+
+    if(two_bit_state.find(PC)==two_bit_state.end()) two_bit_state[PC] = 0;
+
+    int state = two_bit_state[PC];
+    if(state>1)
+    {
+        if(actual_jump == label_jump)
+        {
+            accuracy_2bit++;
+            two_bit_state[PC] = (state == 3)? 3 : state + 1;
+        }
+        else
+        {
+            two_bit_state[PC] -= 1;
+        }
+    }
+    else
+    {
+        if(actual_jump != label_jump)
+        {
+            accuracy_2bit++;
+            two_bit_state[PC] = (state == 0)? 0 : state - 1;
+        }
+        else
+        {
+            two_bit_state[PC] += 1;
+        }
+    }
+    if(two_bit_state[PC] > 1) btb_two_bit[PC] = {"TAKEN",decToHex(hexToDec(PC) + label_jump)};
+    else btb_two_bit[PC] = {"NOT TAKEN",decToHex(hexToDec(PC) + 4)};
+}
+
+void branch_history(string curr_instruction, string next_instruction)
+{
+    vector<string> tokens1 = split(curr_instruction);
+    vector<string> tokens2 = split(next_instruction);
+    string PC = tokens1[2];
+    string target_PC = tokens2[2];
+    int actual_jump = hexToDec(target_PC) - hexToDec(PC);
+    string label = tokens1[tokens1.size()-1];
+    int label_jump;
+    if(label[1]=='x')
+    {
+        label_jump = hexToDec(label);
+    }
+    else
+    {
+        label_jump = stoi(label);
+    }
+    if(tokens1[tokens1.size()-2] == "-") label_jump *= -1;
+    history_table[PC] = (actual_jump == label_jump);
+}
+
+void display(string simulation)
+{
+    if(simulation == "always_taken")
+    {
+        double accuracy =  (taken/(double)total) * 100;
+        cout << "Prediction Method : " << simulation << endl;
+        cout << "\nAccuracy : " << accuracy << "%" << endl;
+
+        cout << "\nBranch Target Buffer for each Instruction (pc)" << endl;
+        cout << "\nPC             Action           Target PC"<< endl;
+
+        for (auto x : btb_taken)
+        {
+            cout<<x.first<<"      "<<x.second.first<<"      "<<x.second.second<<endl;
+        }
+    }
+}
+
 int main()
 {
-    ifstream file("input_file.txt");
+    string input_file = "";
+    cout<<"Enter file name: ";
+    cin>>input_file;
+    ifstream file(input_file);
 
     vector<string>input;
     string line;
@@ -72,39 +288,27 @@ int main()
             input.push_back(line);
             count++;
         } 
-
         file.close(); 
     }
     int size = input.size();
 
-    unordered_map<string,vector<pair<int,string>>> trace;
-    unordered_map<string,bitset<1>> one_bit_history;
-    int total=0;
-    regex pattern("(beq|bne|blt|ble|bgt|bge|bltu|bleu|bgtu|bgeu|jal|j|jalr|jr|ret|call|tail)");
-    for(int i=0;i<size-1;i++)
+    regex pattern("(beq|bne|blt|ble|bgt|bge|bltu|bleu|bgtu|bgeu)");
+    for(int i=0;i<size-2;i++)
     {
         if(regex_search(input[i],pattern))
         {
-            string PC = input[i].substr(10,10);
-            string target = input[i+1].substr(10,10);
-            int branch_taken = 0;
-            long long PC_dec = hexToDec(PC);
-            long long target_dec = hexToDec(target);
-            long long jump = target_dec-PC_dec;
-            if(jump!=4) branch_taken = 1;
-            trace[PC].push_back(make_pair(branch_taken,target));
-            one_bit_history[PC]=0;
+            always_taken(input[i],input[i+1]);
+            always_not_taken(input[i],input[i+1]);
+            one_bit_predictor(input[i],input[i+1]);
+            two_bit_predictor(input[i],input[i+1]);
+            branch_history(input[i],input[i+1]);
             total++;
         }
     }
+    display("always_taken");
+    display("always_not_taken");
+    display("one_bit");
+    display("two_bit");
 
-    //always taken
-    int taken1=always_taken(trace);
-    double acc1=(double)taken1/total*100;
-    cout<<"accuracy of always taken : "<<acc1<<endl;
-    //1 bit
-    int taken2=one_bit(trace,one_bit_history);
-    double acc2=(double)taken2/total*100;
-    cout<<"accuracy of 1-bit branch predictor : "<<acc2<<endl;
     return 0;
 }
