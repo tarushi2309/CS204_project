@@ -21,6 +21,8 @@ int taken = 0;
 int accuracy_1bit = 0;
 int accuracy_2bit = 0;
 
+ofstream MyFile("output.txt");
+
 long long hexToDec(string hex) 
 {   
     for (char& c : hex)
@@ -92,6 +94,7 @@ vector<string> split(string s)
 
 void always_taken(string curr_instruction, string next_instruction)
 {
+    cout<<1<<endl;
     vector<string> tokens1 = split(curr_instruction);
     vector<string> tokens2 = split(next_instruction);
     string PC = tokens1[2];
@@ -258,15 +261,57 @@ void display(string simulation)
     if(simulation == "always_taken")
     {
         double accuracy =  (taken/(double)total) * 100;
-        cout << "Prediction Method : " << simulation << endl;
-        cout << "\nAccuracy : " << accuracy << "%" << endl;
+        MyFile << "Prediction Method : " << simulation << endl;
+        MyFile << "\nAccuracy : " << accuracy << "%" << endl;
 
-        cout << "\nBranch Target Buffer for each Instruction (pc)" << endl;
-        cout << "\nPC             Action           Target PC"<< endl;
+        MyFile << "\nBranch Target Buffer for each Instruction (pc)" << endl;
+        MyFile << "\nPC             Action           Target PC"<< endl;
 
         for (auto x : btb_taken)
         {
-            cout<<x.first<<"      "<<x.second.first<<"      "<<x.second.second<<endl;
+            MyFile<<x.first<<"      "<<x.second.first<<"      "<<x.second.second<<endl;
+        }
+    }
+    if(simulation == "always_not_taken")
+    {
+        double accuracy =  (not_taken/(double)total) * 100;
+        MyFile << "Prediction Method : " << simulation << endl;
+        MyFile << "\nAccuracy : " << accuracy << "%" << endl;
+
+        MyFile << "\nBranch Target Buffer for each Instruction (pc)" << endl;
+        MyFile << "\nPC             Action           Target PC"<< endl;
+
+        for (auto x : btb_not_taken)
+        {
+            MyFile<<x.first<<"      "<<x.second.first<<"      "<<x.second.second<<endl;
+        }
+    }
+    if(simulation == "one_bit")
+    {
+        double accuracy =  (accuracy_1bit/(double)total) * 100;
+        MyFile << "Prediction Method : " << simulation << endl;
+        MyFile << "\nAccuracy : " << accuracy << "%" << endl;
+
+        MyFile << "\nBranch Target Buffer for each Instruction (pc)" << endl;
+        MyFile << "\nPC             Action           Target PC"<< endl;
+
+        for (auto x : btb_one_bit)
+        {
+            MyFile<<x.first<<"      "<<x.second.first<<"      "<<x.second.second<<endl;
+        }
+    }
+    if(simulation == "two_bit")
+    {
+        double accuracy =  (accuracy_2bit/(double)total) * 100;
+        MyFile << "Prediction Method : " << simulation << endl;
+        MyFile << "\nAccuracy : " << accuracy << "%" << endl;
+
+        MyFile << "\nBranch Target Buffer for each Instruction (pc)" << endl;
+        MyFile << "\nPC             Action           Target PC"<< endl;
+
+        for (auto x : btb_two_bit)
+        {
+            MyFile<<x.first<<"      "<<x.second.first<<"      "<<x.second.second<<endl;
         }
     }
 }
@@ -285,18 +330,21 @@ int main()
     {  
         while (getline(file, line) && count<1000000) 
         {
+            if(line=="") continue;
             input.push_back(line);
             count++;
         } 
         file.close(); 
     }
     int size = input.size();
+    cout<<size<<endl;
 
-    regex pattern("(beq|bne|blt|ble|bgt|bge|bltu|bleu|bgtu|bgeu)");
     for(int i=0;i<size-2;i++)
     {
-        if(regex_search(input[i],pattern))
+        vector<string> tokens = split(input[i]);
+        if((tokens.size()>4) && tokens[4][0] == 'b')
         {
+            cout<<i<<" "<<input[i]<<endl;
             always_taken(input[i],input[i+1]);
             always_not_taken(input[i],input[i+1]);
             one_bit_predictor(input[i],input[i+1]);
