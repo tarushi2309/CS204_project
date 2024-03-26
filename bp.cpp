@@ -21,7 +21,9 @@ int taken = 0;
 int accuracy_1bit = 0;
 int accuracy_2bit = 0;
 
-ofstream MyFile("output.txt");
+string input_file = "";
+
+fstream MyFile("output.txt");
 
 long long hexToDec(string hex) 
 {   
@@ -74,6 +76,7 @@ string decToHex(long long dec)
         hex += '0';
     }
     reverse(hex.begin(), hex.end());
+    while(hex.size()<8) hex = "0" + hex;
     return ("0x" + hex);
 }
 
@@ -94,7 +97,6 @@ vector<string> split(string s)
 
 void always_taken(string curr_instruction, string next_instruction)
 {
-    cout<<1<<endl;
     vector<string> tokens1 = split(curr_instruction);
     vector<string> tokens2 = split(next_instruction);
     string PC = tokens1[2];
@@ -265,12 +267,13 @@ void display(string simulation)
         MyFile << "\nAccuracy : " << accuracy << "%" << endl;
 
         MyFile << "\nBranch Target Buffer for each Instruction (pc)" << endl;
-        MyFile << "\nPC             Action           Target PC"<< endl;
+        MyFile << "\nPC              Target PC            Action"<< endl;
 
         for (auto x : btb_taken)
         {
-            MyFile<<x.first<<"      "<<x.second.first<<"      "<<x.second.second<<endl;
+            MyFile<<x.first<<"      "<<x.second.second<<"          "<<x.second.first<<endl;
         }
+        MyFile<<endl;
     }
     if(simulation == "always_not_taken")
     {
@@ -279,12 +282,13 @@ void display(string simulation)
         MyFile << "\nAccuracy : " << accuracy << "%" << endl;
 
         MyFile << "\nBranch Target Buffer for each Instruction (pc)" << endl;
-        MyFile << "\nPC             Action           Target PC"<< endl;
+        MyFile << "\nPC              Target PC            Action"<< endl;
 
         for (auto x : btb_not_taken)
         {
-            MyFile<<x.first<<"      "<<x.second.first<<"      "<<x.second.second<<endl;
+            MyFile<<x.first<<"      "<<x.second.second<<"          "<<x.second.first<<endl;
         }
+        MyFile<<endl;
     }
     if(simulation == "one_bit")
     {
@@ -293,12 +297,13 @@ void display(string simulation)
         MyFile << "\nAccuracy : " << accuracy << "%" << endl;
 
         MyFile << "\nBranch Target Buffer for each Instruction (pc)" << endl;
-        MyFile << "\nPC             Action           Target PC"<< endl;
+        MyFile << "\nPC              Target PC            Action"<< endl;
 
         for (auto x : btb_one_bit)
         {
-            MyFile<<x.first<<"      "<<x.second.first<<"      "<<x.second.second<<endl;
+            MyFile<<x.first<<"      "<<x.second.second<<"          "<<x.second.first<<endl;
         }
+        MyFile<<endl;
     }
     if(simulation == "two_bit")
     {
@@ -307,18 +312,18 @@ void display(string simulation)
         MyFile << "\nAccuracy : " << accuracy << "%" << endl;
 
         MyFile << "\nBranch Target Buffer for each Instruction (pc)" << endl;
-        MyFile << "\nPC             Action           Target PC"<< endl;
+        MyFile << "\nPC              Target PC            Action"<< endl;
 
         for (auto x : btb_two_bit)
         {
-            MyFile<<x.first<<"      "<<x.second.first<<"      "<<x.second.second<<endl;
+            MyFile<<x.first<<"      "<<x.second.second<<"          "<<x.second.first<<endl;
         }
+        MyFile<<endl;
     }
 }
 
 int main()
 {
-    string input_file = "";
     cout<<"Enter file name: ";
     cin>>input_file;
     ifstream file(input_file);
